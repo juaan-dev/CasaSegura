@@ -32,9 +32,13 @@ enum class Destination(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-fun DestinationContent(destination: Destination, dimens: Dimens, services: AppServices) {
+fun DestinationContent(destination: Destination, dimens: Dimens, services: AppServices, onPlay: (String) -> Unit = {}) {
     if (destination == Destination.CREDENTIALS) {
-        CredentialsScreen(service = services.credentials, dimens = dimens)
+        CredentialsScreen(services = services, dimens = dimens)
+        return
+    }
+    if (destination == Destination.HOME) {
+        HomeScreen(services = services, dimens = dimens)
         return
     }
     if (destination == Destination.DISCOVERY) {
@@ -42,7 +46,7 @@ fun DestinationContent(destination: Destination, dimens: Dimens, services: AppSe
         return
     }
     if (destination == Destination.CAMERAS) {
-        CamerasScreen(services = services, dimens = dimens)
+        CamerasScreen(services = services, dimens = dimens, onPlay = onPlay)
         return
     }
     if (destination == Destination.LAYOUTS) {

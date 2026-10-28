@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.casasegura.ui.AppServices
 import com.casasegura.ui.components.CsButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -35,7 +36,9 @@ import kotlinx.coroutines.launch
  * A exclusão ainda não verifica câmeras, porque o repositório de câmeras é da Fase 3.
  */
 @Composable
-fun CredentialsScreen(service: CredentialService, dimens: Dimens) {
+fun CredentialsScreen(services: AppServices, dimens: Dimens) {
+    val service = services.credentials
+    var pendingDeleteId by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val credentials = remember { mutableStateListOf<Credential>() }
     var alias by remember { mutableStateOf("") }
@@ -132,19 +135,30 @@ fun CredentialsScreen(service: CredentialService, dimens: Dimens) {
                     CsButton(
                         onClick = {
                             scope.launch {
-                                // Câmeras ainda não existem; a lista de uso fica vazia até a Fase 3.
-                                val result = service.delete(credential.id, emptyList(), confirmed = true)
-                                message = if (result is CredentialService.DeleteResult.Deleted) {
-                                    "Credencial excluída"
-                                } else {
-                                    "Não foi possível excluir"
+                                val usingIds = services.cameras.list()
+                                    .filter { it.credentialId == credential.id }
+                                    .map { it.id }
+                                // Sem confirmação, a credencial em uso não é removida: o serviço devolve as câmeras afetadas.
+                                when (val result = service.delete(credential.id, usingIds, confirmed = pendingDeleteId == credential.id)) {
+                                    is CredentialService.DeleteResult.Deleted -> {
+                                        pendingDeleteId = null
+                                        message = "Credencial excluída"
+                                    }
+                                    is CredentialService.DeleteResult.InUse -> {
+                                        pendingDeleteId = credential.id
+                                        message = "Em uso por ${result.cameraIds.size} câmera(s). Toque em Confirmar para excluir."
+                                    }
+                                    is CredentialService.DeleteResult.NotFound -> message = "Credencial não encontrada"
                                 }
                                 reload()
                             }
                         },
                         modifier = Modifier.heightIn(min = dimens.minTargetDp.dp),
                     ) {
-                        Text("Excluir", fontSize = dimens.bodyTextSp.sp)
+                        Text(
+                            if (pendingDeleteId == credential.id) "Confirmar exclusão" else "Excluir",
+                            fontSize = dimens.bodyTextSp.sp,
+                        )
                     }
                 }
             }
