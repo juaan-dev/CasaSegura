@@ -1,5 +1,8 @@
 package com.casasegura.ui
 
+import android.app.UiModeManager
+import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.casasegura.core.common.ScreenProfile
@@ -41,12 +45,14 @@ import com.casasegura.ui.theme.Dimens
  */
 @Composable
 fun AppShell(credentialService: CredentialService) {
+    val context = LocalContext.current
+    val isTelevision = remember { isTelevisionDevice(context) }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .safeDrawingPadding(),
     ) {
-        val profile = ScreenProfile.fromWidthDp(maxWidth.value.toInt())
+        val profile = ScreenProfile.resolve(isTelevision = isTelevision, widthDp = maxWidth.value.toInt())
         val dimens = Dimens.of(profile)
         var current by remember { mutableStateOf(Destination.HOME) }
 
@@ -56,6 +62,12 @@ fun AppShell(credentialService: CredentialService) {
             SideRailLayout(current, dimens, credentialService) { current = it }
         }
     }
+}
+
+/** Tipo de dispositivo informado pelo sistema: televisor ou não. */
+private fun isTelevisionDevice(context: Context): Boolean {
+    val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+    return uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 }
 
 @Composable

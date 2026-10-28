@@ -6,20 +6,21 @@ import org.junit.Test
 class ScreenProfileTest {
 
     @Test
-    fun `largura abaixo de 600dp e celular`() {
-        assertEquals(ScreenProfile.PHONE, ScreenProfile.fromWidthDp(360))
-        assertEquals(ScreenProfile.PHONE, ScreenProfile.fromWidthDp(599))
+    fun `largura abaixo de 600dp em celular e celular`() {
+        assertEquals(ScreenProfile.PHONE, ScreenProfile.resolve(isTelevision = false, widthDp = 360))
+        assertEquals(ScreenProfile.PHONE, ScreenProfile.resolve(isTelevision = false, widthDp = 599))
     }
 
     @Test
-    fun `de 600 a 1199dp e tablet`() {
-        assertEquals(ScreenProfile.TABLET, ScreenProfile.fromWidthDp(600))
-        assertEquals(ScreenProfile.TABLET, ScreenProfile.fromWidthDp(1199))
+    fun `largura de 600dp ou mais em aparelho nao televisor e tablet`() {
+        assertEquals(ScreenProfile.TABLET, ScreenProfile.resolve(isTelevision = false, widthDp = 600))
+        assertEquals(ScreenProfile.TABLET, ScreenProfile.resolve(isTelevision = false, widthDp = 960))
     }
 
     @Test
-    fun `a partir de 1200dp e TV`() {
-        assertEquals(ScreenProfile.TV, ScreenProfile.fromWidthDp(1200))
-        assertEquals(ScreenProfile.TV, ScreenProfile.fromWidthDp(1920))
+    fun `televisor usa perfil TV independente da largura`() {
+        // Caso real do emulador: 1920 px a 320 dpi = 960 dp, que antes caía como tablet.
+        assertEquals(ScreenProfile.TV, ScreenProfile.resolve(isTelevision = true, widthDp = 960))
+        assertEquals(ScreenProfile.TV, ScreenProfile.resolve(isTelevision = true, widthDp = 1920))
     }
 }
