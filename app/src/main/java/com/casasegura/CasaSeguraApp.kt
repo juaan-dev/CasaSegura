@@ -2,8 +2,10 @@ package com.casasegura
 
 import android.app.Application
 import androidx.room.Room
+import com.casasegura.core.cameras.CameraRepository
 import com.casasegura.core.credentials.CredentialService
 import com.casasegura.core.database.CasaSeguraDatabase
+import com.casasegura.core.database.RoomCameraRepository
 import com.casasegura.core.database.RoomCredentialStore
 import com.casasegura.core.security.KeystoreSecretCipher
 
@@ -14,7 +16,9 @@ import com.casasegura.core.security.KeystoreSecretCipher
 class CasaSeguraApp : Application() {
 
     private val database: CasaSeguraDatabase by lazy {
-        Room.databaseBuilder(this, CasaSeguraDatabase::class.java, "casasegura.db").build()
+        Room.databaseBuilder(this, CasaSeguraDatabase::class.java, "casasegura.db")
+            .addMigrations(CasaSeguraDatabase.MIGRATION_1_2)
+            .build()
     }
 
     val credentialService: CredentialService by lazy {
@@ -24,5 +28,9 @@ class CasaSeguraApp : Application() {
                 cipher = KeystoreSecretCipher(),
             ),
         )
+    }
+
+    val cameraRepository: CameraRepository by lazy {
+        RoomCameraRepository(database.cameraDao())
     }
 }
