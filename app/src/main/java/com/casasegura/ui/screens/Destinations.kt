@@ -4,23 +4,31 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.casasegura.ui.AppServices
 import com.casasegura.ui.theme.Dimens
 
 /** Destinos principais. Os rótulos seguem o escopo funcional (seção 2 do plano). */
-enum class Destination(val label: String) {
-    HOME("Início"),
-    DISCOVERY("Descobrir"),
-    CAMERAS("Câmeras"),
-    CREDENTIALS("Credenciais"),
-    LAYOUTS("Visualizações"),
-    SETTINGS("Configurações"),
+enum class Destination(val label: String, val icon: ImageVector) {
+    HOME("Início", Icons.Rounded.Home),
+    DISCOVERY("Descobrir", Icons.Rounded.Search),
+    CAMERAS("Câmeras", Icons.Rounded.Videocam),
+    CREDENTIALS("Credenciais", Icons.Rounded.Lock),
+    LAYOUTS("Visualizações", Icons.Rounded.GridView),
+    SETTINGS("Configurações", Icons.Rounded.Settings),
 }
 
 @Composable

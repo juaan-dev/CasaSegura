@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import com.casasegura.ui.components.CsButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -90,7 +90,7 @@ fun CredentialsScreen(service: CredentialService, dimens: Dimens) {
             )
         }
         item {
-            Button(
+            CsButton(
                 onClick = {
                     scope.launch {
                         when (val result = service.create(alias, username, password)) {
@@ -129,7 +129,7 @@ fun CredentialsScreen(service: CredentialService, dimens: Dimens) {
                     fontSize = (dimens.bodyTextSp - 2).sp,
                 )
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    Button(
+                    CsButton(
                         onClick = {
                             scope.launch {
                                 // Câmeras ainda não existem; a lista de uso fica vazia até a Fase 3.

@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import com.casasegura.ui.components.CsButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,7 +59,7 @@ fun DiscoveryScreen(services: AppServices, dimens: Dimens) {
             )
         }
         item {
-            Button(
+            CsButton(
                 onClick = {
                     scope.launch {
                         searching = true
@@ -90,7 +90,7 @@ fun DiscoveryScreen(services: AppServices, dimens: Dimens) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = (dimens.bodyTextSp - 2).sp,
                 )
-                Button(
+                CsButton(
                     onClick = {
                         scope.launch {
                             val host = match.host

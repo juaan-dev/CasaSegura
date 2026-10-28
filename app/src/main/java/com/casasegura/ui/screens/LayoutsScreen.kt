@@ -8,11 +8,16 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.material3.Button
+import com.casasegura.ui.components.CsButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Videocam
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -79,15 +84,15 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StepButton("Linhas −", dimens) { rows = (rows - 1).coerceAtLeast(1) }
+                StepCsButton("Linhas −", dimens) { rows = (rows - 1).coerceAtLeast(1) }
                 Text("$rows × $columns", color = MaterialTheme.colorScheme.onBackground, fontSize = dimens.bodyTextSp.sp)
-                StepButton("Linhas +", dimens) { rows = (rows + 1).coerceAtMost(8) }
-                StepButton("Colunas −", dimens) { columns = (columns - 1).coerceAtLeast(1) }
-                StepButton("Colunas +", dimens) { columns = (columns + 1).coerceAtMost(8) }
+                StepCsButton("Linhas +", dimens) { rows = (rows + 1).coerceAtMost(8) }
+                StepCsButton("Colunas −", dimens) { columns = (columns - 1).coerceAtLeast(1) }
+                StepCsButton("Colunas +", dimens) { columns = (columns + 1).coerceAtMost(8) }
             }
         }
         item {
-            Button(
+            CsButton(
                 onClick = {
                     scope.launch {
                         val result = services.layouts.create(name, rows, columns, dimens.maxLayoutCells)
@@ -127,13 +132,13 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StepButton("Padrão", dimens) {
+                    StepCsButton("Padrão", dimens) {
                         scope.launch { services.layouts.setDefault(layout.id); reload() }
                     }
-                    StepButton("Favorita", dimens) {
+                    StepCsButton("Favorita", dimens) {
                         scope.launch { services.layouts.toggleFavorite(layout.id); reload() }
                     }
-                    StepButton("Excluir", dimens) {
+                    StepCsButton("Excluir", dimens) {
                         scope.launch { services.layouts.delete(layout.id); reload() }
                     }
                 }
@@ -143,8 +148,8 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
 }
 
 @Composable
-private fun StepButton(label: String, dimens: Dimens, onClick: () -> Unit) {
-    Button(onClick = onClick, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
+private fun StepCsButton(label: String, dimens: Dimens, onClick: () -> Unit) {
+    CsButton(onClick = onClick, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
         Text(label, fontSize = (dimens.bodyTextSp - 2).sp)
     }
 }
@@ -167,11 +172,20 @@ private fun Grid(layout: Layout, cameras: List<Camera>, dimens: Dimens, onSlotCl
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable { onSlotClick(index) },
                     ) {
-                        Text(
-                            text = slot.cameraId?.let { names[it] ?: "?" } ?: "vazio",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = (dimens.bodyTextSp - 4).sp,
-                        )
+                        val assigned = slot.cameraId != null
+                        Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = if (assigned) Icons.Rounded.Videocam else Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = if (assigned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp),
+                            )
+                            Text(
+                                text = slot.cameraId?.let { names[it] ?: "?" } ?: "Vazio",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = (dimens.bodyTextSp - 6).sp,
+                            )
+                        }
                     }
                 }
             }
