@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.casasegura.core.common.ScreenProfile
 import com.casasegura.ui.screens.Destination
 import com.casasegura.ui.screens.DestinationContent
+import com.casasegura.ui.screens.PlaybackScreen
 import com.casasegura.ui.theme.Dimens
 
 /** Largura do menu recolhido: só ícones, com espaço para o alvo de toque. */
@@ -74,11 +75,19 @@ fun AppShell(services: AppServices) {
         val profile = ScreenProfile.resolve(isTelevision = isTelevision, widthDp = maxWidth.value.toInt())
         val dimens = Dimens.of(profile)
         var current by remember { mutableStateOf(Destination.HOME) }
+        var playingCameraId by remember { mutableStateOf<String?>(null) }
 
         if (profile == ScreenProfile.PHONE) {
-            PhoneLayout(current, dimens, services) { current = it }
+            PhoneLayout(current, dimens, services, onPlay = { playingCameraId = it }) { current = it }
         } else {
-            SideRailLayout(current, dimens, services) { current = it }
+            SideRailLayout(current, dimens, services, onPlay = { playingCameraId = it }) { current = it }
+        }
+
+        // Reprodução cobre a tela inteira; sair dela fecha o player.
+        playingCameraId?.let { cameraId ->
+            Box(modifier = Modifier.fillMaxSize()) {
+                PlaybackScreen(cameraId = cameraId, services = services, dimens = dimens) { playingCameraId = null }
+            }
         }
     }
 }
@@ -94,11 +103,12 @@ private fun PhoneLayout(
     current: Destination,
     dimens: Dimens,
     services: AppServices,
+    onPlay: (String) -> Unit,
     onSelect: (Destination) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            DestinationContent(current, dimens, services)
+            DestinationContent(current, dimens, services, onPlay)
         }
         Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
             Row(
@@ -127,6 +137,7 @@ private fun SideRailLayout(
     current: Destination,
     dimens: Dimens,
     services: AppServices,
+    onPlay: (String) -> Unit,
     onSelect: (Destination) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(true) }
@@ -186,7 +197,7 @@ private fun SideRailLayout(
                     .widthIn(max = (dimens.maxContentWidthDp ?: Int.MAX_VALUE).dp)
                     .fillMaxWidth(),
             ) {
-                DestinationContent(current, dimens, services)
+                DestinationContent(current, dimens, services, onPlay)
             }
         }
     }
