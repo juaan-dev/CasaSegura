@@ -139,7 +139,7 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = dimens.bodyTextSp.sp,
                 )
-                Grid(layout, cameras, dimens) { slotIndex ->
+                LayoutGrid(layout, cameras, dimens) { slotIndex ->
                     scope.launch {
                         val current = layout.slots.first { it.index == slotIndex }.cameraId
                         val ids = listOf<String?>(null) + cameras.map { it.id }
@@ -173,7 +173,7 @@ private fun StepCsButton(label: String, dimens: Dimens, onClick: () -> Unit) {
 
 /** Pré-visualização da matriz. Cada célula mostra a câmera atribuída ou "vazio". */
 @Composable
-private fun Grid(layout: Layout, cameras: List<Camera>, dimens: Dimens, onSlotClick: (Int) -> Unit) {
+fun LayoutGrid(layout: Layout, cameras: List<Camera>, dimens: Dimens, onSlotClick: (Int) -> Unit = {}) {
     val names = cameras.associate { it.id to it.name }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(vertical = 4.dp)) {
         for (row in 0 until layout.rows) {
