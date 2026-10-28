@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.casasegura.core.credentials.CredentialService
+import com.casasegura.ui.AppServices
 import com.casasegura.ui.theme.Dimens
 
 /** Destinos principais. Os rótulos seguem o escopo funcional (seção 2 do plano). */
@@ -24,19 +24,24 @@ enum class Destination(val label: String) {
 }
 
 @Composable
-fun DestinationContent(destination: Destination, dimens: Dimens, credentialService: CredentialService) {
+fun DestinationContent(destination: Destination, dimens: Dimens, services: AppServices) {
     if (destination == Destination.CREDENTIALS) {
-        CredentialsScreen(service = credentialService, dimens = dimens)
+        CredentialsScreen(service = services.credentials, dimens = dimens)
+        return
+    }
+    if (destination == Destination.DISCOVERY) {
+        DiscoveryScreen(services = services, dimens = dimens)
+        return
+    }
+    if (destination == Destination.CAMERAS) {
+        CamerasScreen(services = services, dimens = dimens)
         return
     }
 
     val (title, body) = when (destination) {
         Destination.HOME -> "Início" to "Visualização padrão e acesso rápido às listas salvas. Vazio até a Fase 6."
-        Destination.DISCOVERY -> "Descobrir câmeras" to "Descoberta ONVIF e varredura limitada. Fase 3."
-        Destination.CAMERAS -> "Câmeras" to "Nenhuma câmera cadastrada. Cadastro na Fase 3."
-        Destination.CREDENTIALS -> "Credenciais" to ""
         Destination.LAYOUTS -> "Visualizações" to "Mosaicos e listas de visualização. Fase 6."
-        Destination.SETTINGS -> "Configurações" to "Preferências do app e diagnósticos. Fase 7."
+        else -> "Configurações" to "Preferências do app e diagnósticos. Fase 7."
     }
 
     Column(

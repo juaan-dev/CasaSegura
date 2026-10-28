@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.casasegura.core.common.ScreenProfile
-import com.casasegura.core.credentials.CredentialService
 import com.casasegura.ui.screens.Destination
 import com.casasegura.ui.screens.DestinationContent
 import com.casasegura.ui.theme.Dimens
@@ -44,7 +43,7 @@ import com.casasegura.ui.theme.Dimens
  * - tablet e TV: menu lateral à esquerda, com largura do protótipo (232 e 320 dp).
  */
 @Composable
-fun AppShell(credentialService: CredentialService) {
+fun AppShell(services: AppServices) {
     val context = LocalContext.current
     val isTelevision = remember { isTelevisionDevice(context) }
     BoxWithConstraints(
@@ -57,9 +56,9 @@ fun AppShell(credentialService: CredentialService) {
         var current by remember { mutableStateOf(Destination.HOME) }
 
         if (profile == ScreenProfile.PHONE) {
-            PhoneLayout(current, dimens, credentialService) { current = it }
+            PhoneLayout(current, dimens, services) { current = it }
         } else {
-            SideRailLayout(current, dimens, credentialService) { current = it }
+            SideRailLayout(current, dimens, services) { current = it }
         }
     }
 }
@@ -74,12 +73,12 @@ private fun isTelevisionDevice(context: Context): Boolean {
 private fun PhoneLayout(
     current: Destination,
     dimens: Dimens,
-    credentialService: CredentialService,
+    services: AppServices,
     onSelect: (Destination) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            DestinationContent(current, dimens, credentialService)
+            DestinationContent(current, dimens, services)
         }
         Row(
             modifier = Modifier
@@ -104,7 +103,7 @@ private fun PhoneLayout(
 private fun SideRailLayout(
     current: Destination,
     dimens: Dimens,
-    credentialService: CredentialService,
+    services: AppServices,
     onSelect: (Destination) -> Unit,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
@@ -148,7 +147,7 @@ private fun SideRailLayout(
                     .widthIn(max = (dimens.maxContentWidthDp ?: Int.MAX_VALUE).dp)
                     .fillMaxWidth(),
             ) {
-                DestinationContent(current, dimens, credentialService)
+                DestinationContent(current, dimens, services)
             }
         }
     }

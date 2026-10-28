@@ -12,11 +12,11 @@ import com.casasegura.ui.theme.CasaSeguraTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val credentialService = (application as CasaSeguraApp).credentialService
+        val services = (application as CasaSeguraApp).services
         setContent {
             CasaSeguraTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    AppShell(credentialService = credentialService)
+                    AppShell(services = services)
                 }
             }
         }
