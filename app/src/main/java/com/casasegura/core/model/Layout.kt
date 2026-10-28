@@ -10,6 +10,10 @@ data class Layout(
     val rows: Int,
     val columns: Int,
     val slots: List<LayoutSlot>,
+    /** Favorita é separada de câmera favorita (seção 2.5 do plano). */
+    val favorite: Boolean = false,
+    /** Apenas uma visualização pode ser a padrão; quem garante isso é o LayoutService. */
+    val isDefault: Boolean = false,
 ) {
     init {
         require(rows > 0 && columns > 0) { "Matriz precisa ter pelo menos 1 linha e 1 coluna" }
