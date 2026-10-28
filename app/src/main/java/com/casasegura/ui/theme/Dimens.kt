@@ -12,6 +12,8 @@ data class Dimens(
     val railWidthDp: Int,
     val maxContentWidthDp: Int?,
     val cardColumns: Int,
+    /** Capacidade de células de um mosaico neste perfil. Provisória até os testes de desempenho (Fase 7). */
+    val maxLayoutCells: Int,
 ) {
     companion object {
         fun of(profile: ScreenProfile): Dimens = when (profile) {
@@ -21,6 +23,7 @@ data class Dimens(
                 railWidthDp = 0,
                 maxContentWidthDp = null,
                 cardColumns = 1,
+                maxLayoutCells = 4,
             )
             ScreenProfile.TABLET -> Dimens(
                 bodyTextSp = 18,
@@ -28,6 +31,7 @@ data class Dimens(
                 railWidthDp = 232,
                 maxContentWidthDp = 1280,
                 cardColumns = 2,
+                maxLayoutCells = 9,
             )
             ScreenProfile.TV -> Dimens(
                 bodyTextSp = 26,
@@ -35,6 +39,7 @@ data class Dimens(
                 railWidthDp = 320,
                 maxContentWidthDp = 1680,
                 cardColumns = 3,
+                maxLayoutCells = 16,
             )
         }
     }

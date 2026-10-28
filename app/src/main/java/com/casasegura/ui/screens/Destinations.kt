@@ -37,10 +37,13 @@ fun DestinationContent(destination: Destination, dimens: Dimens, services: AppSe
         CamerasScreen(services = services, dimens = dimens)
         return
     }
+    if (destination == Destination.LAYOUTS) {
+        LayoutsScreen(services = services, dimens = dimens)
+        return
+    }
 
     val (title, body) = when (destination) {
         Destination.HOME -> "Início" to "Visualização padrão e acesso rápido às listas salvas. Vazio até a Fase 6."
-        Destination.LAYOUTS -> "Visualizações" to "Mosaicos e listas de visualização. Fase 6."
         else -> "Configurações" to "Preferências do app e diagnósticos. Fase 7."
     }
 
