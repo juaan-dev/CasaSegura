@@ -1,0 +1,24 @@
+# Build e IDE
+.gradle/
+build/
+.idea/
+*.iml
+.kotlin/
+local.properties
+captures/
+.cxx/
+*.apk
+*.aab
+
+# Segredos e dados sensíveis (ver seção 7 do plano)
+*.keystore
+*.jks
+keystore.properties
+secrets.properties
+research/network/*.pcap
+research/network/*.pcapng
+research/apk/
+research/rea/*.json
+
+# Documentação local (não versionar)
+docs/
