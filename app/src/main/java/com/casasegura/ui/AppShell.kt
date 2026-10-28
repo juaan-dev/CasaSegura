@@ -3,8 +3,11 @@ package com.casasegura.ui
 import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -14,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -22,8 +26,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ChevronLeft
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,8 +41,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.casasegura.core.common.ScreenProfile
@@ -46,10 +54,13 @@ import com.casasegura.ui.screens.Destination
 import com.casasegura.ui.screens.DestinationContent
 import com.casasegura.ui.theme.Dimens
 
+/** Largura do menu recolhido: só ícones, com espaço para o alvo de toque. */
+private val COLLAPSED_RAIL_WIDTH: Dp = 88.dp
+
 /**
  * Casca de navegação responsiva. O perfil vem do tipo de dispositivo (TV) ou da largura (celular/tablet):
  * - celular: conteúdo em coluna e barra de navegação inferior;
- * - tablet e TV: menu lateral à esquerda, com a largura do protótipo (232 e 320 dp).
+ * - tablet e TV: menu lateral à esquerda, que pode ser recolhido para só ícones.
  */
 @Composable
 fun AppShell(services: AppServices) {
@@ -102,7 +113,7 @@ private fun PhoneLayout(
                         destination = destination,
                         selected = destination == current,
                         dimens = dimens,
-                        compact = true,
+                        style = NavStyle.BOTTOM,
                         modifier = Modifier.weight(1f),
                     ) { onSelect(destination) }
                 }
@@ -118,50 +129,46 @@ private fun SideRailLayout(
     services: AppServices,
     onSelect: (Destination) -> Unit,
 ) {
+    var expanded by remember { mutableStateOf(true) }
+    val railWidth by animateDpAsState(
+        targetValue = if (expanded) dimens.railWidthDp.dp else COLLAPSED_RAIL_WIDTH,
+        animationSpec = tween(durationMillis = 240),
+        label = "rail-width",
+    )
+    val borderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+
     Row(modifier = Modifier.fillMaxSize()) {
         Surface(
             color = MaterialTheme.colorScheme.surface,
             modifier = Modifier
                 .fillMaxHeight()
-                .width(dimens.railWidthDp.dp),
+                .width(railWidth)
+                // Borda vertical na lateral direita, desenhada por cima do fundo para aparecer.
+                .drawWithContent {
+                    drawContent()
+                    val stroke = 2.dp.toPx()
+                    drawLine(
+                        color = borderColor,
+                        start = Offset(size.width - stroke / 2, 0f),
+                        end = Offset(size.width - stroke / 2, size.height),
+                        strokeWidth = stroke,
+                    )
+                },
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
+                    .padding(horizontal = 12.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(start = 8.dp, bottom = 16.dp),
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(MaterialTheme.colorScheme.primary),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Videocam,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(22.dp),
-                        )
-                    }
-                    Text(
-                        text = "CasaSegura",
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontSize = (dimens.bodyTextSp - 2).sp,
-                    )
-                }
+                RailHeader(expanded = expanded, dimens = dimens) { expanded = !expanded }
+                Spacer(Modifier.height(8.dp))
                 Destination.entries.forEach { destination ->
                     NavItem(
                         destination = destination,
                         selected = destination == current,
                         dimens = dimens,
-                        compact = false,
+                        style = if (expanded) NavStyle.RAIL_EXPANDED else NavStyle.RAIL_COLLAPSED,
                         modifier = Modifier.fillMaxWidth(),
                     ) { onSelect(destination) }
                 }
@@ -186,28 +193,82 @@ private fun SideRailLayout(
 }
 
 /**
- * Item de navegação com ícone e rótulo. Selecionado recebe fundo de destaque; com foco, anel claro.
- * No celular o rótulo fica embaixo do ícone, para caber nas cinco ou seis colunas da barra.
+ * Topo do menu: logo e nome quando expandido, só o logo quando recolhido.
+ * Clicar alterna entre os dois estados; a seta indica a ação.
+ */
+@Composable
+private fun RailHeader(expanded: Boolean, dimens: Dimens, onToggle: () -> Unit) {
+    var focused by remember { mutableStateOf(false) }
+    val ring = if (focused) BorderStroke(3.dp, MaterialTheme.colorScheme.onBackground) else null
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = ring,
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = dimens.minTargetDp.dp)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(onClick = onToggle),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (expanded) Arrangement.spacedBy(10.dp) else Arrangement.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 8.dp),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Videocam,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            if (expanded) {
+                Text(
+                    text = "CasaSegura",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = (dimens.bodyTextSp - 2).sp,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ChevronLeft,
+                    contentDescription = "Recolher menu",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+private enum class NavStyle { BOTTOM, RAIL_EXPANDED, RAIL_COLLAPSED }
+
+/**
+ * Item de navegação. Selecionado recebe fundo de destaque; com foco, anel claro.
+ * Na barra inferior o rótulo fica sob o ícone; no menu expandido, ao lado; recolhido, só o ícone.
  */
 @Composable
 private fun NavItem(
     destination: Destination,
     selected: Boolean,
     dimens: Dimens,
-    compact: Boolean,
+    style: NavStyle,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val background = when {
-        selected -> MaterialTheme.colorScheme.primary
-        else -> MaterialTheme.colorScheme.surfaceVariant
-    }
+    val background = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     val content = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
     val ring = if (focused) BorderStroke(3.dp, MaterialTheme.colorScheme.onBackground) else null
 
     Surface(
-        shape = if (compact) RoundedCornerShape(14.dp) else RoundedCornerShape(percent = 50),
+        shape = if (style == NavStyle.BOTTOM) RoundedCornerShape(14.dp) else RoundedCornerShape(percent = 50),
         color = background,
         contentColor = content,
         border = ring,
@@ -216,22 +277,27 @@ private fun NavItem(
             .onFocusChanged { focused = it.isFocused }
             .clickable(onClick = onClick),
     ) {
-        if (compact) {
-            Column(
+        when (style) {
+            NavStyle.BOTTOM -> Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
             ) {
-                Icon(destination.icon, contentDescription = null, modifier = Modifier.size(24.dp))
+                Icon(destination.icon, contentDescription = destination.label, modifier = Modifier.size(24.dp))
                 Text(destination.label, fontSize = 11.sp, maxLines = 1)
             }
-        } else {
-            Row(
+            NavStyle.RAIL_EXPANDED -> Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
             ) {
                 Icon(destination.icon, contentDescription = null, modifier = Modifier.size(dimens.bodyTextSp.dp))
                 Text(destination.label, fontSize = dimens.bodyTextSp.sp, maxLines = 1)
+            }
+            NavStyle.RAIL_COLLAPSED -> Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+            ) {
+                Icon(destination.icon, contentDescription = destination.label, modifier = Modifier.size(dimens.bodyTextSp.dp))
             }
         }
     }

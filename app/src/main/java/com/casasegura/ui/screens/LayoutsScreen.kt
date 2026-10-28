@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import com.casasegura.ui.components.CsButton
+import com.casasegura.ui.components.StepperRow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Videocam
@@ -83,12 +84,28 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
             )
         }
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StepCsButton("Linhas −", dimens) { rows = (rows - 1).coerceAtLeast(1) }
-                Text("$rows × $columns", color = MaterialTheme.colorScheme.onBackground, fontSize = dimens.bodyTextSp.sp)
-                StepCsButton("Linhas +", dimens) { rows = (rows + 1).coerceAtMost(8) }
-                StepCsButton("Colunas −", dimens) { columns = (columns - 1).coerceAtLeast(1) }
-                StepCsButton("Colunas +", dimens) { columns = (columns + 1).coerceAtMost(8) }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                StepperRow(
+                    label = "Linhas",
+                    value = rows,
+                    minTargetDp = dimens.minTargetDp,
+                    bodySp = dimens.bodyTextSp,
+                    onDecrement = { rows = (rows - 1).coerceAtLeast(1) },
+                    onIncrement = { rows = (rows + 1).coerceAtMost(8) },
+                )
+                StepperRow(
+                    label = "Colunas",
+                    value = columns,
+                    minTargetDp = dimens.minTargetDp,
+                    bodySp = dimens.bodyTextSp,
+                    onDecrement = { columns = (columns - 1).coerceAtLeast(1) },
+                    onIncrement = { columns = (columns + 1).coerceAtMost(8) },
+                )
+                Text(
+                    text = "Matriz $rows × $columns = ${rows * columns} células",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = (dimens.bodyTextSp - 2).sp,
+                )
             }
         }
         item {
@@ -150,7 +167,7 @@ fun LayoutsScreen(services: AppServices, dimens: Dimens) {
 @Composable
 private fun StepCsButton(label: String, dimens: Dimens, onClick: () -> Unit) {
     CsButton(onClick = onClick, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
-        Text(label, fontSize = (dimens.bodyTextSp - 2).sp)
+        Text(label, fontSize = (dimens.bodyTextSp - 2).sp, maxLines = 1)
     }
 }
 

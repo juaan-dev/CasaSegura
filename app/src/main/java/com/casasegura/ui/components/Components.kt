@@ -10,7 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -92,6 +96,43 @@ fun EmptyState(icon: ImageVector, title: String, body: String, bodySp: Int) {
             fontSize = bodySp.sp,
             textAlign = TextAlign.Center,
         )
+    }
+}
+
+/**
+ * Ajuste numérico com botões − e +. Os botões são quadrados do tamanho mínimo do alvo,
+ * então o rótulo e o valor nunca quebram linha.
+ */
+@Composable
+fun StepperRow(
+    label: String,
+    value: Int,
+    minTargetDp: Int,
+    bodySp: Int,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = (bodySp - 2).sp,
+            maxLines = 1,
+            modifier = Modifier.width(92.dp),
+        )
+        CsButton(onClick = onDecrement, modifier = Modifier.size(minTargetDp.dp)) {
+            Icon(Icons.Rounded.Remove, contentDescription = "Diminuir $label", modifier = Modifier.size(22.dp))
+        }
+        Text(
+            text = value.toString(),
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = bodySp.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(48.dp),
+        )
+        CsButton(onClick = onIncrement, modifier = Modifier.size(minTargetDp.dp)) {
+            Icon(Icons.Rounded.Add, contentDescription = "Aumentar $label", modifier = Modifier.size(22.dp))
+        }
     }
 }
 
