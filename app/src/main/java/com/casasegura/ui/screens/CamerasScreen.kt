@@ -15,7 +15,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Key
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.VideocamOff
 import androidx.compose.material3.Icon
@@ -34,9 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.casasegura.core.credentials.CredentialService
 import com.casasegura.core.identity.IpChangeDecision
 import com.casasegura.core.identity.Observation
 import com.casasegura.core.model.Camera
+import com.casasegura.core.model.Credential
+import com.casasegura.protocol.CameraVerifier
 import com.casasegura.ui.AppServices
 import com.casasegura.ui.components.CsButton
 import com.casasegura.ui.components.EmptyState
@@ -46,13 +52,14 @@ import com.casasegura.ui.theme.Dimens
 import kotlinx.coroutines.launch
 
 /**
- * Lista de câmeras cadastradas. "Verificar endereços" faz uma descoberta e aplica só as trocas
- * de IP seguras; o restante aparece como pendência para o usuário confirmar.
+ * Lista de câmeras. Cada card permite verificar a identidade (consulta ONVIF autenticada),
+ * escolher a credencial e remover. "Verificar endereços" aplica só as trocas de IP seguras.
  */
 @Composable
-fun CamerasScreen(services: AppServices, dimens: Dimens) {
+fun CamerasScreen(services: AppServices, dimens: Dimens, onPlay: (String) -> Unit = {}) {
     val scope = rememberCoroutineScope()
     val cameras = remember { mutableStateListOf<Camera>() }
+    val credentials = remember { mutableStateListOf<Credential>() }
     val pending = remember { mutableStateListOf<String>() }
     var checking by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -60,6 +67,8 @@ fun CamerasScreen(services: AppServices, dimens: Dimens) {
     suspend fun reload() {
         cameras.clear()
         cameras.addAll(services.cameras.list())
+        credentials.clear()
+        credentials.addAll(services.credentials.list())
     }
 
     LaunchedEffect(Unit) { reload() }
@@ -114,27 +123,63 @@ fun CamerasScreen(services: AppServices, dimens: Dimens) {
                 EmptyState(
                     icon = Icons.Rounded.VideocamOff,
                     title = "Nenhuma câmera cadastrada",
-                    body = "Use a aba Descobrir para encontrar câmeras na rede.",
+                    body = "Use a aba Descobrir para encontrar câmeras na rede ou adicionar por endereço.",
                     bodySp = dimens.bodyTextSp,
                 )
             }
         }
         items(cameras, key = { it.id }) { camera ->
-            CameraCard(camera, dimens) {
-                scope.launch {
-                    services.cameras.delete(camera.id)
-                    reload()
-                }
-            }
+            CameraCard(
+                camera = camera,
+                credentials = credentials,
+                dimens = dimens,
+                onPlay = { onPlay(camera.id) },
+                onVerify = {
+                    scope.launch {
+                        message = when (val outcome = services.verifier.verify(camera.id)) {
+                            is CameraVerifier.Outcome.Confirmed -> "Identidade confirmada: ${outcome.camera.identity.serial ?: "sem serial"}"
+                            CameraVerifier.Outcome.NoCredential -> "Associe uma credencial antes de verificar"
+                            CameraVerifier.Outcome.NoHost -> "A câmera não tem endereço; descubra-a primeiro"
+                            CameraVerifier.Outcome.AuthenticationFailed -> "Credencial recusada pela câmera"
+                            is CameraVerifier.Outcome.Failed -> outcome.reason
+                            CameraVerifier.Outcome.NotFound -> "Câmera não encontrada"
+                        }
+                        reload()
+                    }
+                },
+                onNextCredential = {
+                    scope.launch {
+                        val ids = listOf<String?>(null) + credentials.map { it.id }
+                        val next = ids[(ids.indexOf(camera.credentialId) + 1) % ids.size]
+                        services.cameras.save(camera.copy(credentialId = next))
+                        reload()
+                    }
+                },
+                onRemove = {
+                    scope.launch {
+                        services.cameras.delete(camera.id)
+                        reload()
+                    }
+                },
+            )
         }
     }
 }
 
-/** Card de câmera: ícone, nome, endereço e chip de identidade. */
+/** Card de câmera: ícone, nome, endereço, chips de estado e ações. */
 @Composable
-private fun CameraCard(camera: Camera, dimens: Dimens, onRemove: () -> Unit) {
+private fun CameraCard(
+    camera: Camera,
+    credentials: List<Credential>,
+    dimens: Dimens,
+    onPlay: () -> Unit,
+    onVerify: () -> Unit,
+    onNextCredential: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val hasHost = camera.currentHost != null
-    val hasIdentity = camera.identity.uuid != null
+    val confirmed = camera.connection == com.casasegura.core.model.ConnectionMethod.ONVIF && camera.identity.serial != null
+    val credentialAlias = credentials.firstOrNull { it.id == camera.credentialId }?.alias
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier
@@ -160,18 +205,40 @@ private fun CameraCard(camera: Camera, dimens: Dimens, onRemove: () -> Unit) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (!hasHost) {
-                StatusChip("Sem endereço", MaterialTheme.colorScheme.error)
+            if (!hasHost) StatusChip("Sem endereço", MaterialTheme.colorScheme.error)
+            if (confirmed) {
+                StatusChip("Identidade confirmada", MaterialTheme.colorScheme.primary)
+            } else if (camera.identity.uuid != null) {
+                StatusChip("Anunciada, não confirmada", MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                StatusChip("Sem identificador", MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            StatusChip(
-                label = if (hasIdentity) "Identidade anunciada" else "Sem identificador",
-                color = if (hasIdentity) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        }
+        CsButton(onClick = onNextCredential, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
+            Icon(Icons.Rounded.Key, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Credencial: ${credentialAlias ?: "nenhuma"}",
+                fontSize = (dimens.bodyTextSp - 2).sp,
+                maxLines = 1,
             )
         }
-        CsButton(onClick = onRemove, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
-            Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Remover", fontSize = (dimens.bodyTextSp - 2).sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            CsButton(onClick = onPlay, enabled = hasHost, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
+                Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Assistir", fontSize = (dimens.bodyTextSp - 2).sp, maxLines = 1)
+            }
+            CsButton(onClick = onVerify, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
+                Icon(Icons.Rounded.Verified, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Verificar", fontSize = (dimens.bodyTextSp - 2).sp, maxLines = 1)
+            }
+            CsButton(onClick = onRemove, modifier = Modifier.heightIn(min = dimens.minTargetDp.dp)) {
+                Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Remover", fontSize = (dimens.bodyTextSp - 2).sp, maxLines = 1)
+            }
         }
     }
 }
